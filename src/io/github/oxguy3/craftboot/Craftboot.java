@@ -19,20 +19,12 @@
 package io.github.oxguy3.craftboot;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
-
-import javax.swing.JOptionPane;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
 
 import lombok.Getter;
 import lombok.extern.java.Log;
@@ -43,18 +35,14 @@ public class Craftboot {
 	@Getter private static File dataDir;
 	
 	static final String LAUNCHER_CLASS_NAME = "com.skcraft.launcher.Launcher";
-	static final String LAUNCHER_SUBDIR = ".craftboot";
-	static final String URL_DIALOG_TEXT = "Welcome to CraftBoot! Please enter a launcher configuration URL."
-			+ "\nOnly enter URLs from sources you trust, as malicious URLs could be used for phishing."
-			+ "\n(if you already completed this previously, make sure that you didn't rename your launcher)";
-	
+	static final String LAUNCHER_SUBDIR = ".ktvcraft";
+
 	/**
 	 * Does most of the everything
 	 * 
 	 * @param args arguments (not used)
 	 */
 	public static void main(String[] args) {
-		setLookAndFeel();
 		dataDir = makeDataDir();
 		File launcherDir = new File(dataDir, "launcher");
 		launcherDir.mkdir();
@@ -103,9 +91,7 @@ public class Craftboot {
 				System.exit(1);
 			}
 		}
-		
-		prepareUserUrl();
-		
+
 		try {
 			runLauncherJar(newestPackFile);
 		} catch (Exception e) {
@@ -152,66 +138,6 @@ public class Craftboot {
 	}
 	
 	/**
-	 * Asks the user for the URL to their launcher properties file
-	 * or uses the pre-existing properties file
-	 */
-	public static void prepareUserUrl() {
-		File launcherProperties = new File(dataDir, "launcher.properties");
-		File craftbootUrl = new File(dataDir, ".craftbooturl");
-		String propertiesUrl = "";
-		
-		// get the properties URL from the file if it exists
-		if (craftbootUrl.exists()) {
-			propertiesUrl = CraftbootUtils.getTextFromFile(craftbootUrl);
-			if (propertiesUrl == null) {
-				log.warning("Could not read URL from file, will prompt user to re-enter URL");
-			}
-		}
-		
-		// if the launcher.properties file doesn't or properties URL file didn't exist, prompt
-		// the user for a launcher.properties URL
-		if (!launcherProperties.exists() || propertiesUrl == null) {
-			propertiesUrl = (propertiesUrl == null) ? "" : propertiesUrl;
-			while (propertiesUrl == "") {
-				
-				propertiesUrl = JOptionPane.showInputDialog(URL_DIALOG_TEXT);
-			}
-			if (propertiesUrl == null) {
-				log.info("User canceled setup, shutting down...");
-				System.exit(0);
-				return;
-			}
-			
-			// save the url to a file
-			PrintStream out;
-			try {
-				out = new PrintStream(new FileOutputStream(craftbootUrl));
-				out.print(propertiesUrl);
-				out.close();
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			}
-		}
-		
-		if (!CraftbootUtils.downloadToFile(propertiesUrl, launcherProperties)) {
-			log.warning("Failed to download launcher.properties, default version will likely be used");
-		}
-		
-		if (launcherProperties.exists()) {
-			try {
-				System.setProperty("com.skcraft.launcher.propertiesFile", launcherProperties.getCanonicalPath());
-			} catch (IOException e) {
-				log.warning("Failed to set system property for launcher.properties, default version will likely be used");
-				System.setProperty("com.skcraft.launcher.propertiesFile", null);
-				e.printStackTrace();
-			}
-		} else {
-			System.setProperty("com.skcraft.launcher.propertiesFile", null);
-		}
-	}
-	
-	
-	/**
 	 * Creates a reference to the directory where the launcher will be stored
 	 * 
 	 * Directory should be <user home folder>/<LAUNCHER_SUBDIR>/<name of craftboot jar file>
@@ -223,22 +149,5 @@ public class Craftboot {
 		File instanceDir = new File(craftbootDir, launcherFilename);
 		instanceDir.mkdirs();
 		return instanceDir;
-	}
-	
-	/**
-	 * Sets the javax.swing L&F to the system's native style
-	 */
-	public static void setLookAndFeel() {
-		try {
-			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		} catch (UnsupportedLookAndFeelException e) {
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (InstantiationException e) {
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-		}
 	}
 }
